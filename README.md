@@ -93,7 +93,7 @@ API_KEY=               # generate with: python -c "import secrets; print(secrets
 
 LANGSMITH_TRACING=true
 LANGSMITH_API_KEY=
-LANGSMITH_PROJECT=MMCQA-RAG
+LANGSMITH_PROJECT=your-project-name
 ```
 
 ### 3. Set up the database
