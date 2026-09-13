@@ -1,0 +1,55 @@
+# Environment / secrets
+.env
+.env.local
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# uv
+# (uv.lock SHOULD be committed for reproducible installs — do not ignore it)
+
+# pytest / coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Ruff
+.ruff_cache/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Docker
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Data — raw PDFs and processed intermediates are local working data,
+# not source code. Remove these lines if you want the corpus versioned too.
+data/raw/
+data/processed/
+
+# Local build artifacts
+build/
+dist/
