@@ -1,7 +1,8 @@
 """
-Production RAG pipeline built as a LangChain chain (LCEL), with feature
-parity to src/rag/pipeline.py: structured output (via Gemini's native
-JSON schema mode) and caching.
+
+The RAG pipeline, built as a LangChain chain (LCEL): retriever ->
+prompt -> structured LLM call, with caching, rate limiting, cost
+tracking, and cross-encoder re-ranking built in.
 
 Note on design: `with_structured_output` normally requires a full
 ChatModel (not our simpler rate-limited LLM class). Instead of rebuilding

@@ -1,7 +1,7 @@
 """
-Phase 4: Answer quality evaluation — runs the full RAG pipeline on each
-test question, then judges the generated answer for faithfulness and
-relevance using LLM-as-Judge.
+Phase 4: Answer quality evaluation — runs the full RAG pipeline (LangChain
+chain) on each test question, then judges the generated answer for
+faithfulness and relevance using LLM-as-Judge.
 
 Note: this makes 2 LLM calls per question (1 to answer, 1 to judge),
 so it uses more of your free-tier quota than scripts/evaluate.py.
@@ -10,7 +10,7 @@ Run from the project root:
     python -m scripts.evaluate_answers
 """
 
-from src.rag.pipeline import ask, build_prompt, retrieve
+from src.rag.chain import ask, retriever
 from src.evaluation.answer_quality import judge_answer
 
 TEST_QUESTIONS = [
@@ -28,13 +28,13 @@ def main():
     total = 0
 
     for question in TEST_QUESTIONS:
-        chunks = retrieve(question)
-        if not chunks:
+        docs = retriever.invoke(question)
+        if not docs:
             print(f"⚠️  No chunks for: {question}")
             continue
 
         result = ask(question)
-        context = "\n\n".join(c["content"] for c in chunks)
+        context = "\n\n".join(d.page_content for d in docs)
 
         judgment = judge_answer(question, context, result["answer"])
 
