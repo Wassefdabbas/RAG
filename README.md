@@ -1,6 +1,6 @@
 # MMCQA-RAG
 
-A Retrieval-Augmented Generation (RAG) system built as a learning project
+A Retrieval-Augmented Generation (RAG) system built as a learning project.
 
 The corpus is 10 short documents on Syrian culture (cuisine, clothing, music, architecture, crafts, social customs, agriculture, festivals, language, and a general overview).
 
@@ -37,8 +37,10 @@ PDF documents
   Answer + confidence + sources
 ```
 
-Exposed as a FastAPI service, protected by an API key, with caching,
-rate limiting, cost tracking, LangSmith tracing, and an evaluation suite.
+Built entirely as a LangChain (LCEL) chain: `retriever | prompt |
+structured-llm-call`. Exposed as a FastAPI service, protected by an API
+key, with caching, rate limiting, cost tracking, LangSmith tracing, and
+an evaluation suite.
 
 ## Tech stack
 
@@ -64,7 +66,7 @@ MMCQA-RAG/
 │   ├── ingestion/           # loader, cleaner, chunker
 │   ├── embeddings/          # text embedding
 │   ├── retrieval/           # LangChain retriever, cross-encoder reranker
-│   ├── rag/                 # chain (production), pipeline (manual), cache, schemas
+│   ├── rag/                 # chain (the RAG pipeline), cache, schemas, gemini client
 │   ├── evaluation/           # Recall@K, MRR, LLM-as-judge
 │   └── api/                  # FastAPI app, auth, input validation
 ├── scripts/                 # ingestion + evaluation entry points
@@ -132,6 +134,63 @@ Response:
 }
 ```
 
+## Testing the pipeline without the API
+
+The chain can be called directly in Python — useful for quick checks
+without starting the server:
+
+```bash
+python -c "
+from src.rag.chain import ask
+result = ask('What is traditional Syrian clothing like?')
+print('Answer:', result['answer'])
+print('Confidence:', result['confidence'])
+print('Sources:', result['sources'])
+print('Usage:', result['usage'])
+"
+```
+
+This runs the exact same chain the API uses (hybrid search → re-rank →
+structured LLM call), including caching, rate limiting, and cost
+tracking — just without the HTTP layer or API key check.
+
+## Logging
+
+`src/core/logger.py` configures a single root logger (via
+`get_logger(__name__)`) used across the project — ingestion, retrieval,
+the LLM client, the rate limiter, and the cache all log through it.
+
+Every request logs:
+- the incoming question,
+- each retrieval step (hybrid search + re-ranking, with re-rank scores),
+- the LLM call (model name, estimated input tokens before the call),
+- the response (real input/output token counts and estimated cost, from
+  the API's own `usage_metadata` — not estimates), and
+- cache hits (`Cache hit (Ns old): '<question>'`) when a repeated
+  question is served without calling the LLM at all.
+
+Logs print to stdout by default — pipe them to a file or a log
+aggregator as needed for a real deployment.
+
+## Observability (LangSmith)
+
+Since the pipeline is a LangChain (LCEL) chain, LangSmith traces it
+automatically once the environment variables above are set — no
+`@traceable` decorators or other code changes needed. Each call shows up
+as a trace with the retriever step and the final chain output as
+separate spans, including latency per step.
+
+To view traces: run any question through the chain or the API, then
+check the project dashboard at
+[smith.langchain.com](https://smith.langchain.com) under the project
+name set in `LANGSMITH_PROJECT`.
+
+Note: because the LLM call is wrapped in a `RunnableLambda` (to reuse
+the existing rate limiter and cost tracker) rather than a native
+LangChain `ChatModel`, LangSmith's automatic per-model cost column does
+not populate — cost is still available, just inside the logged output
+payload (`usage`) rather than a dedicated UI column.
+
 ## Evaluation
 
 ```bash
@@ -163,3 +222,4 @@ calls — safe to run offline or in CI. All 36 tests passing.
 - Embedding and re-ranking models are English-only — swap models if multilingual support is needed.
 - The in-memory cache and rate limiter are per-process; a multi-instance deployment would need a shared backend (e.g. Redis) instead.
 - Re-ranking improved overall MRR but can occasionally drop a correct document that was present before re-ranking (observed on one of nine test questions), likely due to the lightweight embedding/re-ranking models and topical overlap between source documents.
+
