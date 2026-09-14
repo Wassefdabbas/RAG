@@ -16,7 +16,7 @@ from src.api.input_guard import validate_question, InputValidationError
 
 logger = get_logger(__name__)
 
-app = FastAPI(title="MMCQA-RAG API", version="0.1.0")
+app = FastAPI(title="CQA-RAG API", version="0.1.0")
 
 
 class AskRequest(BaseModel):

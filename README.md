@@ -1,4 +1,4 @@
-# MMCQA-RAG
+# CQA-RAG
 
 A Retrieval-Augmented Generation (RAG) system built as a learning project.
 
@@ -57,7 +57,7 @@ an evaluation suite.
 ## Project structure
 
 ```
-MMCQA-RAG/
+CQA-RAG/
 ├── data/raw/docs/          # source PDFs (not tracked in git — see .gitignore)
 ├── supabase/migrations/    # SQL migrations (pgvector, tables, hybrid_search fn)
 ├── src/
