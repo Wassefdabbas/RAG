@@ -1,5 +1,6 @@
 """
-LangChain-compatible retriever wrapping our Supabase hybrid_search RPC.
+LangChain-compatible retriever wrapping our Supabase hybrid_search RPC,
+with cross-encoder re-ranking applied before returning results.
 """
 
 from langchain_core.retrievers import BaseRetriever
@@ -9,10 +10,12 @@ from pydantic import Field
 
 from src.embeddings.text import embed_text
 from src.db.client import supabase
+from src.retrieval.reranker import rerank
 
 
 class HybridSupabaseRetriever(BaseRetriever):
-    match_count: int = Field(default=5)
+    candidate_count: int = Field(default=15)
+    final_count: int = Field(default=5)
 
     def _get_relevant_documents(
         self, query: str, *, run_manager: CallbackManagerForRetrieverRun
@@ -24,9 +27,11 @@ class HybridSupabaseRetriever(BaseRetriever):
             {
                 "query_text": query,
                 "query_embedding": query_embedding,
-                "match_count": self.match_count,
+                "match_count": self.candidate_count,
             },
         ).execute()
+
+        reranked = rerank(query, result.data, top_k=self.final_count)
 
         return [
             Document(
@@ -34,8 +39,9 @@ class HybridSupabaseRetriever(BaseRetriever):
                 metadata={
                     "document_id": row["document_id"],
                     "score": row["score"],
+                    "rerank_score": row["rerank_score"],
                     "chunk_id": row["id"],
                 },
             )
-            for row in result.data
+            for row in reranked
         ]
