@@ -1,4 +1,4 @@
-# CQA-RAG
+# CultureQA-RAG
 
 A Retrieval-Augmented Generation (RAG) system built as a learning project.
 
